@@ -11,3 +11,9 @@ To test you need an MQ Client. This script produces the configuration needed to 
 * login to OCP with oc
 * change to a progect where your QM will be deployed
 * run the script
+
+
+# References
+* [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-creating-self-signed-pki-using-openssl](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-creating-self-signed-pki-using-openssl)
+* [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-example-configuring-queue-mutual-tls-authentication](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-example-configuring-queue-mutual-tls-authentication)
+* [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=ecqm-testing-mutual-tls-connection-queue-manager-from-your-laptop](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=ecqm-testing-mutual-tls-connection-queue-manager-from-your-laptop)
