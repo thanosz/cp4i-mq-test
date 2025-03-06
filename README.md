@@ -3,7 +3,7 @@ If you need a Red Hat® OpenShift® Route to connect an application to an IBM® 
 
 This is a simple script to create a TLS-enabled Queue Manager. It creates all necessary certificates and configuration for both QM and MQ Client.
 
-To test you need an MQ Client. This script produces the configuration needed to run ```amqsputc``` which is installed with IBM MQ redistributable client (windows/linux: [https://ibm.biz/mq94redistclients](), macos: [https://developer.ibm.com/tutorials/mq-macos-dev/]())
+To test you need an MQ Client. This script produces the configuration needed to run ```amqsputc``` which is installed with IBM MQ redistributable client ([windows/linux](https://ibm.biz/mq94redistclients), [macos](https://developer.ibm.com/tutorials/mq-macos-dev/))
 
 # Usage
 * clone the repository to a linux machine
