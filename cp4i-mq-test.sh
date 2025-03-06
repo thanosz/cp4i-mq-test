@@ -125,5 +125,6 @@ SSL:
 EOF
 
 
-echo RUN:
+echo NOW RUN:
 echo -e export MQSSLTRUSTSTORE=example-app1-chain.crt\\n/opt/mqm/samp/bin/amqsputc EXAMPLE.QUEUE EXAMPLEQM
+
