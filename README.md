@@ -14,7 +14,7 @@ To test you need an MQ Client. This script produces the configuration needed to 
 
 
 # References
-* [https://www.ibm.com/docs/en/ibm-mq/9.3?topic=cqmumo-configuring-route-connect-queue-manager-from-outside-red-hat-openshift-cluster](https://www.ibm.com/docs/en/ibm-mq/9.3?topic=cqmumo-configuring-route-connect-queue-manager-from-outside-red-hat-openshift-cluster)
+* [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=dcqmumo-configuring-route-connect-queue-manager-from-outside-red-hat-openshift-cluster](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=dcqmumo-configuring-route-connect-queue-manager-from-outside-red-hat-openshift-cluster)
 * [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-creating-self-signed-pki-using-openssl](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-creating-self-signed-pki-using-openssl)
 * [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-example-configuring-queue-mutual-tls-authentication](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=manager-example-configuring-queue-mutual-tls-authentication)
 * [https://www.ibm.com/docs/en/ibm-mq/9.4?topic=ecqm-testing-mutual-tls-connection-queue-manager-from-your-laptop](https://www.ibm.com/docs/en/ibm-mq/9.4?topic=ecqm-testing-mutual-tls-connection-queue-manager-from-your-laptop)
