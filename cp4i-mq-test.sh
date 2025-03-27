@@ -1,33 +1,37 @@
 #!/usr/bin/env bash
-rm *.key *.srl *.crt *.csr *.p12
+[[ -d work ]] && rm -r work
+mkdir work
+pushd work
+
 openssl genpkey -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -out ca.key
 openssl req -x509 -new -nodes -key ca.key -sha512 -days 30 -subj "/CN=example-selfsigned-ca" -out ca.crt
-openssl req -new -nodes -out example-qm.csr -newkey rsa:4096 -keyout example-qm.key -subj '/CN=example-qm'
-openssl x509 -req -in example-qm.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out example-qm.crt -days 3650 -sha512
+openssl req -new -nodes -out queuemanager.csr -newkey rsa:4096 -keyout queuemanager.key -subj '/CN=queuemanager'
+openssl x509 -req -in queuemanager.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out queuemanager.crt -days 3650 -sha512
 
-oc delete secret example-qm-tls
-oc create secret generic example-qm-tls --type="kubernetes.io/tls" --from-file=tls.key=example-qm.key --from-file=tls.crt=example-qm.crt --from-file=ca.crt
+oc delete secret queuemanager-tls
+oc create secret generic queuemanager-tls --type="kubernetes.io/tls" --from-file=tls.key=queuemanager.key --from-file=tls.crt=queuemanager.crt --from-file=ca.crt
 
-openssl req -new -nodes -out example-app1.csr -newkey rsa:4096 -keyout example-app1.key -subj '/CN=example-app1'
-openssl x509 -req -in example-app1.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out example-app1.crt -days 3650 -sha512
-openssl pkcs12 -export -in "example-app1.crt" -name "example-app1" -certfile "ca.crt" -inkey "example-app1.key" -out "example-app1.p12" -passout pass:PASSWORD
-cat example-app1.crt ca.crt > example-app1-chain.crt
 
-oc delete cm example-tls-configmap
+openssl req -new -nodes -out qm-client.csr -newkey rsa:4096 -keyout qm-client.key -subj '/CN=qm-client'
+openssl x509 -req -in qm-client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out qm-client.crt -days 3650 -sha512
+openssl pkcs12 -export -in "qm-client.crt" -name "qm-client" -certfile "ca.crt" -inkey "qm-client.key" -out "qm-client.p12" -passout pass:PASSWORD
+cat qm-client.crt ca.crt > qm-client-chain.crt
+
+oc delete cm queuemanager-tls-configmap
 oc apply  -f - << EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: example-tls-configmap
+  name: queuemanager-tls-configmap
 data:
-  example-tls.mqsc: |
+  queuemanager-tls.mqsc: |
     DEFINE CHANNEL('MTLS.SVRCONN') CHLTYPE(SVRCONN) SSLCAUTH(REQUIRED) SSLCIPH('ANY_TLS13_OR_HIGHER') REPLACE
     SET CHLAUTH('MTLS.SVRCONN') TYPE(SSLPEERMAP) SSLPEER('CN=*') USERSRC(NOACCESS) ACTION(REPLACE)
-    SET CHLAUTH('MTLS.SVRCONN') TYPE(SSLPEERMAP) SSLPEER('CN=example-app1') USERSRC(MAP) MCAUSER('app1') ACTION(REPLACE)
+    SET CHLAUTH('MTLS.SVRCONN') TYPE(SSLPEERMAP) SSLPEER('CN=qm-client') USERSRC(MAP) MCAUSER('app1') ACTION(REPLACE)
     SET AUTHREC PRINCIPAL('app1') OBJTYPE(QMGR) AUTHADD(CONNECT,INQ)
     DEFINE QLOCAL('EXAMPLE.QUEUE') REPLACE
     SET AUTHREC PROFILE('EXAMPLE.QUEUE') PRINCIPAL('app1') OBJTYPE(QUEUE) AUTHADD(BROWSE,PUT,GET,INQ)
-  example-tls.ini: |
+  queuemanager-tls.ini: |
     Service:
         Name=AuthorizationService
         EntryPoints=14
@@ -35,13 +39,13 @@ data:
 EOF
 
 
-oc delete QueueManager exampleqm
+oc delete QueueManager queuemanager-1
 sleep 5
 oc create -f - << EOF
 apiVersion: mq.ibm.com/v1beta1
 kind: QueueManager
 metadata:
-  name: exampleqm
+  name: queuemanager-1
 spec:
   license:
     accept: true  
@@ -51,14 +55,14 @@ spec:
     name: EXAMPLEQM
     mqsc:
     - configMap:
-        name: example-tls-configmap
+        name: queuemanager-tls-configmap
         items:
-        - example-tls.mqsc
+        - queuemanager-tls.mqsc
     ini:
     - configMap:
-        name: example-tls-configmap
+        name: queuemanager-tls-configmap
         items:
-        - example-tls.ini
+        - queuemanager-tls.ini
     storage:
       queueManager:
         type: ephemeral
@@ -69,14 +73,14 @@ spec:
     keys:
       - name: default
         secret:
-          secretName: example-qm-tls
+          secretName: queuemanager-tls
           items:
             - tls.key
             - tls.crt
             - ca.crt
 EOF
 while true; do
-        HOSTNAME=$(oc get route exampleqm-ibm-mq-qm --template="{{.spec.host}}")
+        HOSTNAME=$(oc get route queuemanager-1-ibm-mq-qm --template="{{.spec.host}}")
         if [[ $? -ne 0 ]]; then 
                sleep 5
         else
@@ -105,7 +109,7 @@ cat << EOF > ccdt.json
             "transmissionSecurity":
             {
               "cipherSpecification": "ANY_TLS13",
-              "certificateLabel": "example-app1"
+              "certificateLabel": "qm-client"
             },
             "type": "clientConnection"
         }
@@ -120,11 +124,11 @@ Channels:
   ChannelDefinitionFile=ccdt.json
 SSL:
   OutboundSNI=HOSTNAME
-  SSLKeyRepository=example-app1.p12
+  SSLKeyRepository=qm-client.p12
   SSLKeyRepositoryPassword=PASSWORD 
 EOF
 
 
 echo NOW RUN:
-echo -e export MQSSLTRUSTSTORE=example-app1-chain.crt\\n/opt/mqm/samp/bin/amqsputc EXAMPLE.QUEUE EXAMPLEQM
-
+echo -e export MQSSLTRUSTSTORE=qm-client-chain.crt\\n/opt/mqm/samp/bin/amqsputc EXAMPLE.QUEUE EXAMPLEQM
+popd
