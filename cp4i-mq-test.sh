@@ -8,8 +8,8 @@ openssl req -x509 -new -nodes -key ca.key -sha512 -days 30 -subj "/CN=example-se
 openssl req -new -nodes -out queuemanager.csr -newkey rsa:4096 -keyout queuemanager.key -subj '/CN=queuemanager'
 openssl x509 -req -in queuemanager.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out queuemanager.crt -days 3650 -sha512
 
-oc delete secret queuemanager-tls
-oc create secret generic queuemanager-tls --type="kubernetes.io/tls" --from-file=tls.key=queuemanager.key --from-file=tls.crt=queuemanager.crt --from-file=ca.crt
+oc delete secret queuemanager
+oc create secret generic queuemanager --type="kubernetes.io/tls" --from-file=tls.key=queuemanager.key --from-file=tls.crt=queuemanager.crt --from-file=ca.crt
 
 
 openssl req -new -nodes -out qm-client.csr -newkey rsa:4096 -keyout qm-client.key -subj '/CN=qm-client'
@@ -17,21 +17,21 @@ openssl x509 -req -in qm-client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -ou
 openssl pkcs12 -export -in "qm-client.crt" -name "qm-client" -certfile "ca.crt" -inkey "qm-client.key" -out "qm-client.p12" -passout pass:PASSWORD
 cat qm-client.crt ca.crt > qm-client-chain.crt
 
-oc delete cm queuemanager-tls-configmap
+oc delete cm queuemanager-configmap
 oc apply  -f - << EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: queuemanager-tls-configmap
+  name: queuemanager-configmap
 data:
-  queuemanager-tls.mqsc: |
+  queuemanager.mqsc: |
     DEFINE CHANNEL('MTLS.SVRCONN') CHLTYPE(SVRCONN) SSLCAUTH(REQUIRED) SSLCIPH('ANY_TLS13_OR_HIGHER') REPLACE
     SET CHLAUTH('MTLS.SVRCONN') TYPE(SSLPEERMAP) SSLPEER('CN=*') USERSRC(NOACCESS) ACTION(REPLACE)
     SET CHLAUTH('MTLS.SVRCONN') TYPE(SSLPEERMAP) SSLPEER('CN=qm-client') USERSRC(MAP) MCAUSER('app1') ACTION(REPLACE)
     SET AUTHREC PRINCIPAL('app1') OBJTYPE(QMGR) AUTHADD(CONNECT,INQ)
     DEFINE QLOCAL('EXAMPLE.QUEUE') REPLACE
     SET AUTHREC PROFILE('EXAMPLE.QUEUE') PRINCIPAL('app1') OBJTYPE(QUEUE) AUTHADD(BROWSE,PUT,GET,INQ)
-  queuemanager-tls.ini: |
+  queuemanager.ini: |
     Service:
         Name=AuthorizationService
         EntryPoints=14
@@ -55,14 +55,14 @@ spec:
     name: EXAMPLEQM
     mqsc:
     - configMap:
-        name: queuemanager-tls-configmap
+        name: queuemanager-configmap
         items:
-        - queuemanager-tls.mqsc
+        - queuemanager.mqsc
     ini:
     - configMap:
-        name: queuemanager-tls-configmap
+        name: queuemanager-configmap
         items:
-        - queuemanager-tls.ini
+        - queuemanager.ini
     storage:
       queueManager:
         type: ephemeral
@@ -73,7 +73,7 @@ spec:
     keys:
       - name: default
         secret:
-          secretName: queuemanager-tls
+          secretName: queuemanager
           items:
             - tls.key
             - tls.crt
