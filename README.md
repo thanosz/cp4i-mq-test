@@ -1,3 +1,6 @@
+### This repo is archived in favor of https://github.com/thanosz/cp4i-ace-mq-reference
+
+
 # cp4i-mq-test
 If you need a Red Hat® OpenShift® Route to connect an application to an IBM® MQ queue manager from outside a Red Hat OpenShift cluster, you must enable TLS on IBM MQ queue manager and client application, because the Red Hat OpenShift Container Platform Router uses SNI for routing requests to the IBM MQ queue manager. SNI is only available in the TLS protocol when a TLS 1.2 or higher protocol is used. 
 
